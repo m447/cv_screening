@@ -112,7 +112,7 @@ The workflow can be managed through natural language commands:
 
 ## 🎯 AI Scoring Criteria
 
-The AI evaluates candidates on:
+The AI evaluates candidates on Data Analyst job requirements:
 - **Technical Skills**: Python, SQL, data visualization tools
 - **Experience**: Years in relevant roles
 - **Education**: Relevant degrees and certifications
@@ -123,6 +123,10 @@ The AI evaluates candidates on:
 - 70-89: Qualified
 - 50-69: Possibly Qualified
 - 0-49: Unqualified
+
+## Possibble Improvements
+- Score different jobs
+- Research candidate on internet using AI agent
 
 ## 🐛 Troubleshooting
 
@@ -151,29 +155,3 @@ The AI evaluates candidates on:
 - **OpenAI Costs**: ~$0.10 per CV (GPT-4)
 - **Success Rate**: 95%+ with proper setup
 
-## 🔒 Security Considerations
-
-- All credentials stored securely in n8n
-- OAuth2 for Google services
-- API keys encrypted at rest
-- No CV data persisted outside Google services
-- Compliant with GDPR requirements
-
-## 🤝 Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## 📄 License
-
-This project is provided as-is for educational and commercial use.
-
-## 🙏 Acknowledgments
-
-- n8n team for the amazing automation platform
-- OpenAI for GPT-4 API
-- Google for Workspace APIs
-- Anthropic for Claude and MCP protocol
-
----
-
-**Built with ❤️ using n8n + AI Agents + Agentic CLI**
