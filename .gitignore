@@ -41,3 +41,10 @@ out/
 # n8n specific
 .n8n/
 database.sqlite
+
+# Project specific - not for public repo
+n8n_api.txt
+n8n-agentic-cli-presentation.md
+CLAUDE.md
+archive/
+github-setup.md
