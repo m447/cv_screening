@@ -1,0 +1,437 @@
+{
+  "name": "CV Screening Enhanced - Phase 1",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": "1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa",
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "f20c4893-8866-4c85-8144-a67a99e086cf",
+      "name": "Monitor CV Folder",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [-1264, 0],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{$json.id}}",
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "e885b26e-8a5c-4894-bc25-37082623a06e",
+      "name": "Download CV",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [-592, 96],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1xfU9rzjBpb3NEHYzvMuHZ2R2QW_IYe5i3dCW7Ls-bII",
+          "mode": "list",
+          "cachedResultName": "CV Screening Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xfU9rzjBpb3NEHYzvMuHZ2R2QW_IYe5i3dCW7Ls-bII/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xfU9rzjBpb3NEHYzvMuHZ2R2QW_IYe5i3dCW7Ls-bII/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "3cb83fce-efbb-4128-bdc6-e124de7596be",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [528, 96],
+      "typeVersion": 4
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-368, 96],
+      "id": "3a996a5f-9e01-4671-91b4-bc62d496b060",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the AI response from the agent output\nconst response = $input.item.json.response || $input.item.json.output || $input.item.json;\nlet aiText = '';\n\n// Extract text from the response structure\nif (response.generations && response.generations[0] && response.generations[0][0]) {\n  aiText = response.generations[0][0].text;\n} else if (typeof response === 'string') {\n  aiText = response;\n} else if (response.text) {\n  aiText = response.text;\n}\n\n// Remove markdown code blocks if present\naiText = aiText.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\n// Parse the JSON\ntry {\n  const jsonData = JSON.parse(aiText);\n  \n  // Add candidate name and score for easier access downstream\n  return {\n    ...jsonData,\n    'Candidate Name': jsonData.name,\n    'Score': jsonData.overall_score\n  };\n} catch (error) {\n  // If parsing fails, return error info\n  return {\n    error: 'Failed to parse JSON',\n    rawResponse: aiText,\n    name: 'Parse Error',\n    email: 'error',\n    overall_score: 0,\n    category: 'Error',\n    matchedSkills: [],\n    yearsExperience: 0,\n    redFlags: ['Failed to parse response'],\n    strengths: [],\n    recommendation: 'no - parsing error',\n    'Candidate Name': 'Parse Error',\n    'Score': 0\n  };\n}"
+      },
+      "id": "e2aea1ec-0fd4-46be-8dd4-648b46e380b8",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [304, 96]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-816, 96]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._processingSuccess}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "Check Processing Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [752, 96]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": "={{$json._fileId}}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1CQWsocqKluQnSkUdMGQsL-Owsr7aQXQn",
+          "mode": "id"
+        }
+      },
+      "id": "move-to-processed",
+      "name": "Move to Processed",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": "={{ $('Filter PDFs Only').item.json.id }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1mu9rgElrKMU1vt22EC7KaKWquw1EkJDP",
+          "mode": "id"
+        }
+      },
+      "id": "move-to-failed",
+      "name": "Move to Failed",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1200, 192]
+    },
+    {
+      "parameters": {
+        "sendTo": "svama85@gmail.com",
+        "subject": "CV Processed: {{$json['Candidate Name']}} (Score: {{$json.Score}})",
+        "message": "<h2>CV Processing Complete</h2>\n<p>A new CV has been analyzed:</p>\n<ul>\n<li><strong>Candidate:</strong> {{$json['Candidate Name']}}</li>\n<li><strong>Score:</strong> {{$json.Score}}/100</li>\n<li><strong>Category:</strong> {{$json.Category}}</li>\n</ul>\n<p><strong>Recommendation:</strong> {{$json['AI Recommendation']}}</p>\n<p><a href=\"{{$json['CV Link']}}\">View CV</a></p>",
+        "options": {}
+      },
+      "id": "email-standard",
+      "name": "Email - Standard",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [976, 0]
+    },
+    {
+      "parameters": {
+        "sendTo": "svama85@gmail.com",
+        "subject": "⚠️ CV Processing Error: {{$json._fileName}}",
+        "message": "<h2>CV Processing Error</h2>\n<p>An error occurred while processing a CV:</p>\n<ul>\n<li><strong>File:</strong> {{$json._fileName}}</li>\n<li><strong>Error:</strong> {{$json._error}}</li>\n<li><strong>Time:</strong> {{$json['Date Applied']}}</li>\n</ul>\n<p>The CV has been moved to the Failed folder for manual review.</p>\n<p><a href=\"{{$json['CV Link']}}\">View CV</a></p>",
+        "options": {}
+      },
+      "id": "email-error",
+      "name": "Email - Error Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [976, 192]
+    },
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "promptType": "define",
+        "text": "=Analyze this CV content and provide a comprehensive evaluation:\n\n{{ $json.text }}",
+        "systemMessage": "You are an expert CV screening agent analyzing candidates for a Data Analyst position requiring Python, SQL, and data visualization skills.\n\nAnalyze the CV and return ONLY a valid JSON object with these fields:\n- name (string): candidate full name\n- email (string): candidate email or 'not found'\n- overall_score (number): score from 0 to 100\n- category (string): one of 'Highly Qualified', 'Qualified', 'Possibly Qualified', or 'Unqualified'\n- matchedSkills (array): list of matching technical skills found\n- yearsExperience (number): years of relevant experience\n- redFlags (array): list of any concerns or missing requirements\n- strengths (array): list of candidate's key strengths\n- recommendation (string): 'hire', 'maybe', or 'no' followed by brief reasoning\n\nScoring guidelines:\n- 90-100: Highly Qualified (perfect match)\n- 70-89: Qualified (strong candidate)\n- 50-69: Possibly Qualified (has potential)\n- 0-49: Unqualified (lacks requirements)\n\nIMPORTANT: Return ONLY the JSON object, no other text.",
+        "options": {
+          "maxIterations": 10,
+          "returnIntermediateSteps": false
+        }
+      },
+      "id": "agent-node-1",
+      "name": "AI Agent for Scoring",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.5,
+      "position": [112, 400]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
+      "id": "chat-model-1",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [304, 512]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "'1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa' in parents and mimeType='application/pdf' and trashed=false"
+            },
+            {
+              "name": "fields",
+              "value": "files(id,name,mimeType,webViewLink,createdTime,modifiedTime)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-all-cvs-api",
+      "name": "Get All CVs via API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1056, 208]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the files array from the API response\nconst items = $input.all();\nlet allFiles = [];\n\n// Extract files from the API response structure\nitems.forEach(item => {\n  if (item.json.files && Array.isArray(item.json.files)) {\n    // API returns {files: [...]} structure\n    allFiles = allFiles.concat(item.json.files);\n  } else if (item.json.mimeType) {\n    // Individual file items\n    allFiles.push(item.json);\n  }\n});\n\n// Filter only PDF files\nconst pdfFiles = allFiles.filter(file => {\n  return file.mimeType === 'application/pdf';\n});\n\n// Return each PDF as a separate item for n8n\nreturn pdfFiles.map(pdf => ({ json: pdf }));"
+      },
+      "id": "filter-pdfs-code",
+      "name": "Filter PDFs Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-832, 208]
+    },
+    {
+      "id": "prepare-sheet-data-node",
+      "name": "Prepare Sheet Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1500, 280],
+      "parameters": {
+        "jsCode": "// Get the parsed AI response\nconst aiData = $input.item.json;\n\n// Get the original file info from earlier in the workflow\nconst fileInfo = $('Filter PDFs Only').item.json;\n\n// Format the Google Drive link\nconst driveLink = `https://drive.google.com/file/d/${fileInfo.id}/view?usp=drivesdk`;\n\n// Get current date in YYYY-MM-DD format\nconst today = new Date().toISOString().split('T')[0];\n\n// Prepare the data for Google Sheets\nreturn {\n  'Date Applied': today,\n  'Candidate Name': aiData.name,\n  'CV Link': driveLink,\n  'Score': aiData.overall_score,\n  'Category': aiData.category,\n  'Matched Keywords': aiData.matchedSkills.join(', '),\n  'Red Flags': aiData.redFlags.length > 0 ? aiData.redFlags.join(', ') : 'None',\n  'Status': 'AI Reviewed',\n  'AI Recommendation': aiData.recommendation,\n  'Years Experience': aiData.yearsExperience,\n  'Strengths': aiData.strengths.join('; '),\n  '_processingSuccess': true,\n  '_fileId': fileInfo.id,\n  '_fileName': fileInfo.name\n};"
+      }
+    }
+  ],
+  "connections": {
+    "Monitor CV Folder": {
+      "main": [
+        [
+          {
+            "node": "Get All CVs via API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All CVs via API": {
+      "main": [
+        [
+          {
+            "node": "Filter PDFs Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter PDFs Only": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Download CV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download CV": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent for Scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent for Scoring": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent for Scoring",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sheet Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sheet Data": {
+      "main": [
+        [
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Check Processing Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Processing Success": {
+      "main": [
+        [
+          {
+            "node": "Email - Standard",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email - Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Standard": {
+      "main": [
+        [
+          {
+            "node": "Move to Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Error Alert": {
+      "main": [
+        [
+          {
+            "node": "Move to Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,50 @@
+Sarah Johnson
+sarah.j@email.com | (555) 234-5678
+
+Data Analyst
+
+SUMMARY
+Data Analyst with 3 years of experience in data analysis, reporting, and visualization. 
+Skilled in SQL, Python, and creating actionable insights from complex datasets.
+
+EXPERIENCE
+
+Data Analyst
+E-commerce Solutions Ltd. | Jan 2022 - Present
+• Create weekly sales reports using SQL queries and Excel
+• Maintain Power BI dashboards for marketing team
+• Analyze customer behavior patterns using Python pandas
+• Support A/B testing initiatives with statistical analysis
+
+Junior Data Analyst  
+StartUp Analytics | Jun 2021 - Dec 2021
+• Assisted in building SQL databases for client projects
+• Created basic visualizations using Tableau
+• Performed data cleaning and validation tasks
+• Documented data processes and procedures
+
+Data Intern
+Local Business Corp | Jan 2021 - May 2021
+• Learned SQL basics and created simple queries
+• Helped prepare monthly reports
+• Shadowed senior analysts on projects
+• Gained experience with Excel pivot tables
+
+SKILLS
+• Languages: SQL (Intermediate), Python (Basic), Excel (Advanced)
+• Tools: Power BI, Tableau (Basic), Google Analytics
+• Statistical Analysis: Basic statistics, A/B testing
+• Soft Skills: Team player, Good communication, Detail-oriented
+
+EDUCATION
+Bachelor of Business Administration
+State University | 2020
+Relevant Coursework: Statistics, Database Management, Business Analytics
+
+PROJECTS
+• Customer Segmentation: Used K-means clustering in Python to segment customers
+• Sales Dashboard: Built interactive Power BI dashboard for sales team
+
+ADDITIONAL
+• Currently pursuing Google Data Analytics Certificate
+• Member of local Data Science Meetup group

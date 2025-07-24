@@ -1,0 +1,87 @@
+{
+  "name": "Move Processed File Node",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "update",
+        "fileId": "={{ $('Monitor CV Folder').item.json.id }}",
+        "updateFields": {
+          "addParents": ["PROCESSED_FOLDER_ID"],
+          "removeParents": ["{{ $('Monitor CV Folder').item.json.parents[0] }}"]
+        }
+      },
+      "id": "move-to-processed",
+      "name": "Move to Processed",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1450, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $('Parse AI Response').item.json.Score }}",
+              "operation": "largerEqual",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "update",
+        "fileId": "={{ $('Monitor CV Folder').item.json.id }}",
+        "updateFields": {
+          "addParents": ["FAILED_FOLDER_ID"],
+          "removeParents": ["{{ $('Monitor CV Folder').item.json.parents[0] }}"]
+        }
+      },
+      "id": "move-to-failed",
+      "name": "Move to Failed",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1450, 450],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Move to Processed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Move to Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

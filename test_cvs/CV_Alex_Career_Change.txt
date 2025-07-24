@@ -1,0 +1,57 @@
+Alexandra Chen
+alex.chen@email.com | +1-555-4321
+
+CAREER TRANSITION: Marketing Manager → Data Analyst
+
+SUMMARY
+Marketing professional with 5 years experience transitioning to data analytics. Recently completed intensive 
+data science bootcamp and seeking to leverage analytical background in data-driven role. Strong foundation 
+in statistics, customer analytics, and business intelligence.
+
+PROFESSIONAL EXPERIENCE
+
+Marketing Manager | Retail Brand Co. | 2019 - 2024
+• Analyzed marketing campaign performance using Google Analytics and Excel
+• Increased ROI by 35% through data-driven campaign optimization  
+• Created weekly reports on customer behavior and sales trends
+• Managed $2M annual budget using predictive forecasting models
+• Self-taught SQL to query customer database for insights
+
+Marketing Analyst | StartUp Inc. | 2018 - 2019
+• Conducted market research and competitive analysis
+• Built Excel models for customer lifetime value calculations
+• Performed cohort analysis for user retention insights
+• Created Tableau dashboards for executive presentations
+
+RECENT EDUCATION & TRAINING
+
+Data Science Bootcamp | DataCamp Institute | 2024 (6 months intensive)
+• Python Programming: pandas, NumPy, scikit-learn
+• SQL and Database Management 
+• Statistical Analysis and Machine Learning Fundamentals
+• Capstone Project: Built predictive model for customer churn (87% accuracy)
+
+Coursera Certifications (2023-2024):
+• Google Data Analytics Professional Certificate
+• IBM Data Science Professional Certificate
+• Statistics with Python - University of Michigan
+
+TECHNICAL SKILLS
+• Programming: Python (Intermediate), SQL (Intermediate), R (Basic)
+• Analytics Tools: Excel (Expert), Tableau (Intermediate), Power BI (Basic)
+• Statistical Analysis: Hypothesis testing, Regression, A/B testing
+• Marketing Tools: Google Analytics, Facebook Analytics, Mixpanel
+
+ORIGINAL EDUCATION
+Bachelor of Science in Marketing
+Business University | 2018
+
+KEY PROJECTS
+• Customer Segmentation: Applied K-means clustering to identify 5 distinct customer segments
+• Sales Forecasting: Built time series model in Python achieving 92% accuracy
+• Marketing Attribution: Developed multi-touch attribution model using SQL and Python
+
+WHY DATA ANALYTICS?
+After years of making data-informed marketing decisions, I'm passionate about diving deeper into 
+analytics. My unique background combines business acumen with newly acquired technical skills, 
+positioning me to bridge the gap between data insights and business strategy.

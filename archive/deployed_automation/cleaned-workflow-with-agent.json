@@ -1,0 +1,566 @@
+{
+  "name": "CV Screening with AI Agent - Cleaned",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Process CVs Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-1264, 96]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa",
+          "mode": "id"
+        },
+        "returnAll": true,
+        "options": {
+          "queryString": "mimeType='application/pdf' and trashed=false"
+        }
+      },
+      "id": "get-all-cvs",
+      "name": "Get All New CVs",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [-1040, 96],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-816, 96]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{$json.id}}",
+        "options": {}
+      },
+      "id": "download-cv",
+      "name": "Download CV",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [-592, 96],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [-368, 96],
+      "id": "extract-pdf",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Analyze this CV for a Data Analyst position:\n\n{{ $json.text }}",
+        "options": {
+          "systemMessage": "You are an expert CV screening agent analyzing candidates for a Data Analyst position requiring Python, SQL, and data visualization skills.\n\nAnalyze the CV and return ONLY valid JSON:\n{\n  \"name\": \"candidate full name\",\n  \"email\": \"email if found\", \n  \"overall_score\": 0-100,\n  \"technical_skills\": \"comma-separated list\",\n  \"years_experience\": number,\n  \"experience_summary\": \"brief summary\",\n  \"key_strengths\": \"top 3 strengths\",\n  \"concerns\": \"any red flags or gaps\",\n  \"recommendation\": \"hire/maybe/no with reasoning\",\n  \"ideal_next_steps\": \"suggested interview focus areas\"\n}",
+          "temperature": 0.2
+        }
+      },
+      "id": "ai-agent",
+      "name": "AI Agent for Scoring",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.5,
+      "position": [-144, 96]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "chat-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [-144, 240],
+      "credentials": {
+        "openAiApi": {
+          "id": "Iyg2H3l8OfWgDCu4",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get data from previous nodes\nconst fileData = $('Download CV').item.json;\nconst fileName = fileData.name || 'Unknown';\nconst fileLink = fileData.webViewLink || fileData.alternateLink || '';\nconst fileId = fileData.id;\n\n// Check if agent succeeded\nlet aiAnalysis;\nlet processingSuccess = true;\n\ntry {\n  // Agent output is in the 'output' field\n  const agentOutput = $input.item.json.output;\n  \n  if (typeof agentOutput === 'string') {\n    // Remove markdown code blocks if present\n    const cleanOutput = agentOutput.replace(/```json\\n/g, '').replace(/```\\n/g, '').replace(/```/g, '');\n    aiAnalysis = JSON.parse(cleanOutput.trim());\n  } else {\n    aiAnalysis = agentOutput;\n  }\n} catch (error) {\n  processingSuccess = false;\n  aiAnalysis = {\n    overall_score: 0,\n    name: 'Unknown',\n    technical_skills: '',\n    concerns: 'AI Analysis Failed: ' + error.message,\n    key_strengths: '',\n    recommendation: 'Please review manually',\n    error: error.message\n  };\n}\n\n// Extract candidate name from AI or filename\nconst candidateName = aiAnalysis.name || fileName\n  .replace(/\\.pdf$/i, '')\n  .replace(/^CV_/i, '')\n  .replace(/_/g, ' ');\n\n// Determine category based on score\nlet category = 'Unqualified';\nif (aiAnalysis.overall_score >= 85) category = 'Highly Qualified';\nelse if (aiAnalysis.overall_score >= 70) category = 'Qualified';\nelse if (aiAnalysis.overall_score >= 50) category = 'Possibly Qualified';\n\n// Format for Google Sheets and next steps\nreturn {\n  'Date Applied': new Date().toISOString().split('T')[0],\n  'Candidate Name': candidateName,\n  'CV Link': fileLink,\n  'Score': aiAnalysis.overall_score || 0,\n  'Category': category,\n  'Matched Keywords': aiAnalysis.technical_skills || '',\n  'Red Flags': aiAnalysis.concerns || 'None',\n  'Status': processingSuccess ? 'AI Reviewed' : 'Error - Review Needed',\n  'AI Recommendation': aiAnalysis.recommendation || 'No recommendation',\n  'Years Experience': aiAnalysis.years_experience || 'Unknown',\n  'Strengths': aiAnalysis.key_strengths || '',\n  // Metadata for routing\n  '_processingSuccess': processingSuccess,\n  '_fileId': fileId,\n  '_fileName': fileName,\n  '_error': aiAnalysis.error || null,\n  '_shouldResearch': processingSuccess && (aiAnalysis.overall_score >= 85)\n};"
+      },
+      "id": "parse-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, 96]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1xfU9rzjBpb3NEHYzvMuHZ2R2QW_IYe5i3dCW7Ls-bII",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "log-sheets",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [304, 96],
+      "typeVersion": 4,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "di2sX6e1W7xHXFNa",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json._shouldResearch }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "score-check",
+      "name": "Score >= 85?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [528, 96]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Create a research plan for this high-scoring candidate:\n\nCandidate: {{ $('Parse AI Response').item.json['Candidate Name'] }}\nScore: {{ $('Parse AI Response').item.json.Score }}\nSkills: {{ $('Parse AI Response').item.json['Matched Keywords'] }}",
+        "options": {
+          "systemMessage": "You are a candidate research specialist. Create a comprehensive research plan for this high-scoring candidate (score >= 85).\n\nReturn ONLY valid JSON:\n{\n  \"candidateName\": \"name\",\n  \"researchPriority\": \"high\",\n  \"searchQueries\": [\n    \"[Name] Data Analyst LinkedIn\",\n    \"site:github.com [Name] Python\",\n    \"[Name] portfolio data visualization\",\n    \"[Name] [current company] data analyst\"\n  ],\n  \"platformsToCheck\": [\"LinkedIn\", \"GitHub\", \"Personal Portfolio\", \"Medium/Blog\"],\n  \"verificationChecklist\": [\n    \"Verify current employment\",\n    \"Check Python/SQL project examples\",\n    \"Review data visualization portfolio\",\n    \"Validate years of experience\"\n  ],\n  \"estimatedResearchTime\": \"15-20 minutes\"\n}",
+          "temperature": 0.3
+        }
+      },
+      "id": "research-agent",
+      "name": "Candidate Online Research",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.5,
+      "position": [752, 0]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "research-model",
+      "name": "Research Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [752, 144],
+      "credentials": {
+        "openAiApi": {
+          "id": "Iyg2H3l8OfWgDCu4",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1xfU9rzjBpb3NEHYzvMuHZ2R2QW_IYe5i3dCW7Ls-bII",
+          "mode": "id"
+        },
+        "sheetName": "Research Queue",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Candidate": "={{ $json.output.candidateName }}",
+            "Score": "={{ $('Parse AI Response').item.json.Score }}",
+            "Priority": "={{ $json.output.researchPriority }}",
+            "Search Queries": "={{ $json.output.searchQueries.join('; ') }}",
+            "Platforms": "={{ $json.output.platformsToCheck.join(', ') }}",
+            "Status": "Pending",
+            "Date Added": "={{ new Date().toISOString() }}",
+            "Est. Time": "={{ $json.output.estimatedResearchTime }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-research",
+      "name": "Log Research Plan",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [976, 0],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "di2sX6e1W7xHXFNa",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._processingSuccess}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "Check Processing Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [752, 192]
+    },
+    {
+      "parameters": {
+        "sendTo": "svama85@gmail.com",
+        "subject": "CV Processed: {{ $json['Candidate Name'] }} (Score: {{ $json.Score }})",
+        "message": "<h2>CV Processing Complete</h2>\n<p>A new CV has been analyzed:</p>\n<ul>\n<li><strong>Candidate:</strong> {{ $json['Candidate Name'] }}</li>\n<li><strong>Score:</strong> {{ $json.Score }}/100</li>\n<li><strong>Category:</strong> {{ $json.Category }}</li>\n<li><strong>Skills:</strong> {{ $json['Matched Keywords'] }}</li>\n<li><strong>Experience:</strong> {{ $json['Years Experience'] }} years</li>\n</ul>\n<p><strong>Recommendation:</strong> {{ $json['AI Recommendation'] }}</p>\n<p><strong>Strengths:</strong> {{ $json.Strengths }}</p>\n<p><a href=\"{{ $json['CV Link'] }}\">View CV</a></p>",
+        "options": {}
+      },
+      "id": "email-success",
+      "name": "Email - Standard",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [976, 96],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kHGNG9wgUFdTkiBE",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "svama85@gmail.com",
+        "subject": "⚠️ CV Processing Error: {{ $json._fileName }}",
+        "message": "<h2>CV Processing Error</h2>\n<p>An error occurred while processing a CV:</p>\n<ul>\n<li><strong>File:</strong> {{ $json._fileName }}</li>\n<li><strong>Error:</strong> {{ $json._error }}</li>\n<li><strong>Time:</strong> {{ $json['Date Applied'] }}</li>\n</ul>\n<p>The CV has been moved to the Failed folder for manual review.</p>\n<p><a href=\"{{ $json['CV Link'] }}\">View CV</a></p>",
+        "options": {}
+      },
+      "id": "email-error",
+      "name": "Email - Error Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [976, 288],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kHGNG9wgUFdTkiBE",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": "={{$json._fileId}}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1CQWsocqKluQnSkUdMGQsL-Owsr7aQXQn",
+          "mode": "id"
+        }
+      },
+      "id": "move-processed",
+      "name": "Move to Processed",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1200, 96],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": "={{$json._fileId}}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1mu9rgElrKMU1vt22EC7KaKWquw1EkJDP",
+          "mode": "id"
+        }
+      },
+      "id": "move-failed",
+      "name": "Move to Failed",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1200, 288],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Process CVs Every 30 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Get All New CVs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All New CVs": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Download CV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download CV": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent for Scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent for Scoring": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent for Scoring",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Score >= 85?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score >= 85?": {
+      "main": [
+        [
+          {
+            "node": "Candidate Online Research",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Processing Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidate Online Research": {
+      "main": [
+        [
+          {
+            "node": "Log Research Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Candidate Online Research",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Research Plan": {
+      "main": [
+        [
+          {
+            "node": "Check Processing Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Processing Success": {
+      "main": [
+        [
+          {
+            "node": "Email - Standard",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email - Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Standard": {
+      "main": [
+        [
+          {
+            "node": "Move to Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Error Alert": {
+      "main": [
+        [
+          {
+            "node": "Move to Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

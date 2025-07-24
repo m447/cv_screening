@@ -1,0 +1,116 @@
+{
+  "name": "Web Scraper Sub-Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 30000,
+          "followRedirects": true
+        }
+      },
+      "id": "http-request",
+      "name": "Fetch Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.data }}",
+        "dataPropertyName": "data",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "title",
+              "returnValue": "text"
+            },
+            {
+              "key": "description",
+              "cssSelector": "meta[name='description']",
+              "returnValue": "attribute",
+              "attribute": "content"
+            },
+            {
+              "key": "mainContent",
+              "cssSelector": "main, article, .content, #content",
+              "returnValue": "text"
+            },
+            {
+              "key": "profileInfo",
+              "cssSelector": ".profile, .user-info, .about",
+              "returnValue": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "html-extract",
+      "name": "Extract Content",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ \n{\n  url: $('workflow-trigger').item.json.url,\n  title: $json.data?.title || 'No title found',\n  description: $json.data?.description || 'No description found',\n  content: $json.data?.mainContent || $json.data?.profileInfo || 'No content extracted',\n  extractedAt: new Date().toISOString()\n}\n}}",
+        "options": {}
+      },
+      "id": "format-output",
+      "name": "Format Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "workflow-trigger": {
+      "main": [
+        [
+          {
+            "node": "http-request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http-request": {
+      "main": [
+        [
+          {
+            "node": "html-extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "html-extract": {
+      "main": [
+        [
+          {
+            "node": "format-output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

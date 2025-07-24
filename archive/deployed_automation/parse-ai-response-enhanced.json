@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Get the AI response\nconst aiResponse = $input.item.json.output || $input.item.json.response || $input.item.json.text || '';\n\n// Try to extract JSON from the response\nlet jsonData;\n\ntry {\n  // First, try direct JSON parsing\n  jsonData = JSON.parse(aiResponse);\n} catch (e) {\n  try {\n    // Try to find JSON within the text\n    const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/m);\n    if (jsonMatch) {\n      jsonData = JSON.parse(jsonMatch[0]);\n    } else {\n      // If no JSON found, create a structured response from text\n      jsonData = {\n        name: extractValue(aiResponse, 'name:') || 'Unknown',\n        email: extractValue(aiResponse, 'email:') || 'not found',\n        overall_score: parseInt(extractValue(aiResponse, 'score:') || extractValue(aiResponse, 'overall_score:') || '0'),\n        category: extractValue(aiResponse, 'category:') || 'Unqualified',\n        matchedSkills: extractArray(aiResponse, 'skills:') || [],\n        yearsExperience: parseInt(extractValue(aiResponse, 'experience:') || '0'),\n        redFlags: extractArray(aiResponse, 'red flags:') || extractArray(aiResponse, 'concerns:') || [],\n        strengths: extractArray(aiResponse, 'strengths:') || [],\n        recommendation: extractValue(aiResponse, 'recommendation:') || 'no'\n      };\n    }\n  } catch (parseError) {\n    // If all parsing fails, return error structure\n    jsonData = {\n      error: 'Failed to parse AI response',\n      rawResponse: aiResponse,\n      name: 'Parse Error',\n      email: 'error',\n      overall_score: 0,\n      category: 'Error',\n      matchedSkills: [],\n      yearsExperience: 0,\n      redFlags: ['Failed to parse response'],\n      strengths: [],\n      recommendation: 'no - parsing error'\n    };\n  }\n}\n\n// Helper functions\nfunction extractValue(text, key) {\n  const regex = new RegExp(key + '\\\\s*([^\\\\n]+)', 'i');\n  const match = text.match(regex);\n  return match ? match[1].trim() : null;\n}\n\nfunction extractArray(text, key) {\n  const regex = new RegExp(key + '\\\\s*\\\\[([^\\\\]]+)\\\\]', 'i');\n  const match = text.match(regex);\n  if (match) {\n    return match[1].split(',').map(item => item.trim().replace(/[\"']/g, ''));\n  }\n  return [];\n}\n\n// Ensure all required fields exist\nconst result = {\n  name: jsonData.name || 'Unknown',\n  email: jsonData.email || 'not found',\n  overall_score: jsonData.overall_score || 0,\n  category: jsonData.category || 'Unqualified',\n  matchedSkills: jsonData.matchedSkills || [],\n  yearsExperience: jsonData.yearsExperience || 0,\n  redFlags: jsonData.redFlags || [],\n  strengths: jsonData.strengths || [],\n  recommendation: jsonData.recommendation || 'no',\n  originalResponse: aiResponse\n};\n\nreturn result;"
+      },
+      "id": "parse-ai-enhanced",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1900, 280]
+    }
+  ],
+  "connections": {}
+}

@@ -1,0 +1,33 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "limit": 100,
+        "filters": {
+          "folderId": "1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa",
+          "driveId": "My Drive"
+        },
+        "options": {
+          "fields": "*"
+        },
+        "queryFilters": {
+          "query": "mimeType='application/pdf' and trashed=false"
+        }
+      },
+      "id": "get-all-cvs-correct",
+      "name": "Get All New CVs",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [-1300, 300],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {}
+}

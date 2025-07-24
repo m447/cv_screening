@@ -1,0 +1,97 @@
+{
+  "position": "Software Engineer",
+  "scoring": {
+    "requiredSkills": {
+      "weight": 10,
+      "keywords": [
+        "python",
+        "javascript",
+        "typescript",
+        "node.js",
+        "api",
+        "rest",
+        "sql",
+        "git"
+      ]
+    },
+    "bonusSkills": {
+      "weight": 5,
+      "keywords": [
+        "n8n",
+        "automation",
+        "google workspace",
+        "workflow",
+        "integration",
+        "docker",
+        "kubernetes",
+        "ci/cd",
+        "agile",
+        "scrum"
+      ]
+    },
+    "experience": {
+      "weight": 5,
+      "keywords": [
+        "3+ years experience",
+        "5+ years experience",
+        "senior",
+        "lead",
+        "managed team",
+        "technical lead",
+        "architect"
+      ]
+    },
+    "education": {
+      "weight": 5,
+      "keywords": [
+        "bachelor",
+        "master",
+        "phd",
+        "degree",
+        "computer science",
+        "software engineering",
+        "information technology"
+      ]
+    },
+    "certifications": {
+      "weight": 3,
+      "keywords": [
+        "certified",
+        "aws",
+        "azure",
+        "gcp",
+        "google cloud",
+        "certification"
+      ]
+    },
+    "softSkills": {
+      "weight": 2,
+      "keywords": [
+        "communication",
+        "teamwork",
+        "leadership",
+        "problem solving",
+        "analytical",
+        "collaborative"
+      ]
+    }
+  },
+  "redFlags": {
+    "weight": -10,
+    "keywords": [
+      "employment gap",
+      "frequent job changes",
+      "terminated",
+      "fired"
+    ]
+  },
+  "scoring_thresholds": {
+    "qualified": 50,
+    "possibly_qualified": 30,
+    "unqualified": 0
+  },
+  "minimum_requirements": {
+    "required_skills_match": 3,
+    "total_skills_match": 5
+  }
+}

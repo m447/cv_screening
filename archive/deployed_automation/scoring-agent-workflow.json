@@ -1,0 +1,123 @@
+{
+  "name": "CV Scoring Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "When Called",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.2,
+          "systemMessage": "You are an expert CV screening agent specializing in technical talent evaluation. Your role is to analyze CVs and provide consistent, fair scoring based on job requirements.\n\nYou can dynamically adjust your evaluation based on:\n1. The specific position (Data Analyst, Backend Developer, DevOps, etc.)\n2. Required skills and experience level\n3. Company culture and team fit\n\nFor each CV, you will:\n- Identify the best matching position(s)\n- Score technical skills (0-100)\n- Evaluate experience relevance\n- Assess cultural fit indicators\n- Provide hiring recommendations\n\nBe objective, thorough, and explain your reasoning."
+        }
+      },
+      "id": "scoring-agent",
+      "name": "Scoring Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.5,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.cv_text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "response_format": {
+            "type": "json_object"
+          }
+        }
+      },
+      "id": "analyze-cv",
+      "name": "Analyze CV",
+      "type": "@n8n/n8n-nodes-langchain.toolOpenAi",
+      "typeVersion": 1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "id": "chat-model",
+      "name": "OpenAI Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a85c7cb9-2b95-4a23-a17e-14a058e2e48e",
+              "name": "analysis",
+              "value": "={{ $json.output }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "output",
+      "name": "Return Analysis",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "trigger": {
+      "main": [
+        [
+          {
+            "node": "scoring-agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "scoring-agent": {
+      "main": [
+        [
+          {
+            "node": "output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "analyze-cv": {
+      "ai_tool": [
+        [
+          {
+            "node": "scoring-agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat-model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "scoring-agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

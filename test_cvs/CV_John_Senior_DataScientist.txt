@@ -1,0 +1,49 @@
+John Smith
+Email: john.smith@email.com | Phone: +1-555-0123 | LinkedIn: linkedin.com/in/johnsmith
+
+SENIOR DATA SCIENTIST
+
+PROFESSIONAL SUMMARY
+Experienced Data Scientist with 8+ years in machine learning, predictive analytics, and big data technologies. 
+Proven track record of delivering data-driven solutions that increased revenue by 25% and reduced operational costs by $3M annually.
+
+WORK EXPERIENCE
+
+Lead Data Scientist | Tech Corp International | 2020 - Present
+• Architected end-to-end ML pipelines using Python, TensorFlow, and Apache Spark
+• Led team of 5 data scientists in developing real-time fraud detection system (95% accuracy)
+• Implemented advanced NLP models for customer sentiment analysis using BERT
+• Reduced model training time by 60% through distributed computing optimization
+
+Senior Data Analyst | Financial Services Inc | 2018 - 2020
+• Developed predictive models for customer churn using Python and scikit-learn
+• Created interactive Power BI dashboards tracking KPIs across 15 departments
+• Automated reporting processes using SQL and Python, saving 20 hours/week
+• Conducted A/B testing resulting in 18% conversion rate improvement
+
+Data Analyst | Retail Analytics Co | 2016 - 2018
+• Built SQL queries for complex data extraction from 50+ table database
+• Performed statistical analysis using R and Python
+• Created Tableau visualizations for C-suite presentations
+• Implemented data quality checks reducing errors by 40%
+
+TECHNICAL SKILLS
+• Programming: Python (Expert), R (Advanced), SQL (Expert), Scala (Intermediate)
+• ML/AI: TensorFlow, PyTorch, scikit-learn, XGBoost, Deep Learning, NLP
+• Data Visualization: Power BI, Tableau, Looker, Matplotlib, Plotly
+• Big Data: Spark, Hadoop, Kafka, Airflow, AWS, Azure, Docker, Kubernetes
+• Databases: PostgreSQL, MySQL, MongoDB, Redshift, BigQuery
+
+EDUCATION
+Master of Science in Data Science | Stanford University | 2016
+Bachelor of Science in Computer Science | UC Berkeley | 2014
+
+CERTIFICATIONS
+• AWS Certified Machine Learning - Specialty (2023)
+• Google Cloud Professional Data Engineer (2022)
+• Microsoft Azure Data Scientist Associate (2021)
+
+ACHIEVEMENTS
+• Published 3 papers on deep learning applications in peer-reviewed journals
+• Speaker at DataCon 2023: "Scaling ML Models in Production"
+• Kaggle Competition: Top 5% in Customer Segmentation Challenge

@@ -1,0 +1,39 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "list",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa",
+          "mode": "id",
+          "cachedResultName": "1_CV_Upload",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa"
+        },
+        "returnAll": true,
+        "options": {
+          "queryString": "mimeType='application/pdf' and trashed=false"
+        }
+      },
+      "id": "get-all-cvs-fixed",
+      "name": "Get All New CVs",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [-1024, 240],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {}
+}

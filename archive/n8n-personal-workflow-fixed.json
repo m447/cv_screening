@@ -1,0 +1,179 @@
+{
+  "name": "CV Screening Personal Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute",
+              "minute": 5
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": "1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa",
+        "event": "fileCreated"
+      },
+      "id": "drive-trigger",
+      "name": "Monitor CV Folder",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [250, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": "={{$json.id}}"
+      },
+      "id": "download-cv",
+      "name": "Download CV",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [450, 300],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get file info\nconst fileName = $input.item.json.name;\nconst fileLink = $input.item.json.webViewLink;\n\n// Try to get text content\nlet cvText = '';\ntry {\n  // Check if binary data exists\n  if ($input.item.binary && $input.item.binary.data) {\n    cvText = $input.item.binary.data.toString().toLowerCase();\n  }\n} catch (e) {\n  console.log('Could not extract text:', e);\n}\n\n// Scoring keywords\nconst keywords = {\n  skills: ['python', 'javascript', 'java', 'react', 'node', 'api', 'database', 'sql'],\n  experience: ['experience', 'worked', 'developed', 'built', 'managed', 'led'],\n  education: ['degree', 'bachelor', 'master', 'university', 'certification']\n};\n\nlet score = 0;\nlet foundKeywords = [];\nlet category = 'Unqualified';\n\n// Score based on keywords\nfor (const [type, words] of Object.entries(keywords)) {\n  words.forEach(keyword => {\n    if (cvText.includes(keyword)) {\n      score += 10;\n      foundKeywords.push(keyword);\n    }\n  });\n}\n\n// Categorize based on score\nif (score >= 50) category = 'Qualified';\nelse if (score >= 30) category = 'Possibly Qualified';\n\n// Return data matching your sheet columns\nreturn {\n  'Date Applied': new Date().toISOString().split('T')[0],\n  'Candidate Name': fileName.replace('.pdf', '').replace('CV_', ''),\n  'CV Link': fileLink,\n  'Score': score,\n  'Category': category,\n  'Matched Keywords': foundKeywords.join(', ') || 'None',\n  'Red Flags': '',\n  'Status': 'New'\n};"
+      },
+      "id": "score-cv",
+      "name": "Score CV",
+      "type": "n8n-nodes-base.code",
+      "position": [650, 300],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "1xfU9rzjBpb3NEHYzvMuHZ2R2QW_IYe5i3dCW7Ls-bII",
+        "range": "A2:H2",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date Applied",
+              "displayName": "Date Applied",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Candidate Name",
+              "displayName": "Candidate Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CV Link",
+              "displayName": "CV Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Matched Keywords",
+              "displayName": "Matched Keywords",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Red Flags",
+              "displayName": "Red Flags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        }
+      },
+      "id": "log-sheets",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [850, 300],
+      "typeVersion": 4
+    }
+  ],
+  "connections": {
+    "Monitor CV Folder": {
+      "main": [
+        [
+          {
+            "node": "Download CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download CV": {
+      "main": [
+        [
+          {
+            "node": "Score CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score CV": {
+      "main": [
+        [
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": []
+}

@@ -1,0 +1,10 @@
+{
+  "parameters": {
+    "jsCode": "// Get the AI response from the agent output\nconst response = $input.item.json.response || $input.item.json.output || $input.item.json;\nlet aiText = '';\n\n// Extract text from the response structure\nif (response.generations && response.generations[0] && response.generations[0][0]) {\n  aiText = response.generations[0][0].text;\n} else if (typeof response === 'string') {\n  aiText = response;\n} else if (response.text) {\n  aiText = response.text;\n}\n\n// Remove markdown code blocks if present\naiText = aiText.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\n// Parse the JSON\ntry {\n  const jsonData = JSON.parse(aiText);\n  \n  // Add candidate name and score for easier access downstream\n  return {\n    ...jsonData,\n    'Candidate Name': jsonData.name,\n    'Score': jsonData.overall_score\n  };\n} catch (error) {\n  // If parsing fails, return error info\n  return {\n    error: 'Failed to parse JSON',\n    rawResponse: aiText,\n    name: 'Parse Error',\n    email: 'error',\n    overall_score: 0,\n    category: 'Error',\n    matchedSkills: [],\n    yearsExperience: 0,\n    redFlags: ['Failed to parse response'],\n    strengths: [],\n    recommendation: 'no - parsing error',\n    'Candidate Name': 'Parse Error',\n    'Score': 0\n  };\n}"
+  },
+  "id": "parse-ai-response",
+  "name": "Parse AI Response",
+  "type": "n8n-nodes-base.code",
+  "typeVersion": 2,
+  "position": [-1900, 280]
+}

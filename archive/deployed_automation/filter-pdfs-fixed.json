@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.mimeType}}",
+              "operation": "equals",
+              "value2": "application/pdf"
+            }
+          ]
+        }
+      },
+      "id": "filter-pdfs",
+      "name": "Filter PDFs Only",
+      "type": "n8n-nodes-base.if",
+      "position": [-1100, 300],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {}
+}

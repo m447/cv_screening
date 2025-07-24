@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Sensitive data
+credentials/
+secrets/
+*.key
+*.pem
+
+# Test data
+test-cvs/
+sample-data/
+
+# Build artifacts
+dist/
+build/
+out/
+
+# n8n specific
+.n8n/
+database.sqlite

@@ -1,0 +1,42 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "'1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa' in parents and mimeType='application/pdf' and trashed=false"
+            },
+            {
+              "name": "fields",
+              "value": "files(id,name,mimeType,webViewLink,createdTime)"
+            },
+            {
+              "name": "pageSize",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-cvs-http",
+      "name": "Get All CVs via API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [-1300, 300],
+      "typeVersion": 4.2,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {}
+}

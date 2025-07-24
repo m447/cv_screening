@@ -1,0 +1,20 @@
+{
+  "parameters": {
+    "operation": "move",
+    "fileId": {
+      "__rl": true,
+      "value": "={{ $('Get All CVs via API').item.json.id }}",
+      "mode": "id"
+    },
+    "parentId": {
+      "__rl": true,
+      "value": "1CQWsocqKluQnSkUdMGQsL-Owsr7aQXQn",
+      "mode": "id"
+    }
+  },
+  "id": "move-to-failed",
+  "name": "Move to Failed",
+  "type": "n8n-nodes-base.googleDrive",
+  "typeVersion": 3,
+  "position": [-1100, 600]
+}

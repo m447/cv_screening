@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Filter only PDF files\nconst items = $input.all();\nconst pdfFiles = items.filter(item => {\n  // Check if mimeType exists and is PDF\n  return item.json.mimeType === 'application/pdf';\n});\n\n// Return only PDF files\nreturn pdfFiles;"
+      },
+      "id": "filter-pdfs-code",
+      "name": "Filter PDFs Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1100, 300]
+    }
+  ],
+  "connections": {}
+}

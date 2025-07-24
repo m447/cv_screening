@@ -1,0 +1,65 @@
+{
+  "createdAt": "2025-07-23T18:24:06.233Z",
+  "updatedAt": "2025-07-24T06:57:55.000Z",
+  "id": "zJjGB4P5Hy9IfZmL",
+  "name": "CV Screening Enhanced - Phase 1",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": "1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa",
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "f20c4893-8866-4c85-8144-a67a99e086cf",
+      "name": "Monitor CV Folder",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [-1264, 0],
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{$json.id}}",
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "e885b26e-8a5c-4894-bc25-37082623a06e",
+      "name": "Download CV",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [-592, 96],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "czkniWtEtuPsZAHm",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Download CV": {
+      "main": [[{"node": "Extract from File", "type": "main", "index": 0}]]
+    }
+  }
+}

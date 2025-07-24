@@ -1,0 +1,201 @@
+{
+  "name": "CV Batch Processing with File Movement",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-batch",
+      "name": "Start Batch Process",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [150, 300]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "folderId": "1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa",
+        "returnAll": true,
+        "options": {
+          "filter": "mimeType='application/pdf' and trashed=false"
+        }
+      },
+      "id": "list-cvs",
+      "name": "List All CVs",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [350, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Configuration - Update these IDs\nconst config = {\n  processedFolderId: 'YOUR_PROCESSED_FOLDER_ID',  // Update this!\n  failedFolderId: 'YOUR_FAILED_FOLDER_ID',        // Update this!\n  sourceFolderId: '1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa'\n};\n\n// Pass through file data with config\nconst files = $input.all();\nreturn files.map(item => ({\n  ...item.json,\n  config: config\n}));"
+      },
+      "id": "add-config",
+      "name": "Add Folder Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [550, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "process-batch",
+      "name": "Process One by One",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": "={{ $json.id }}"
+      },
+      "id": "download-cv",
+      "name": "Download CV",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [950, 300]
+    },
+    {
+      "parameters": {
+        "extractionMethod": "pdfExtraction"
+      },
+      "id": "extract-text",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1150, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get CV text and file info\nconst cvText = $input.item.json.text;\nconst fileInfo = $('Process One by One').item.json;\n\n// Create OpenAI request\nconst requestBody = {\n  model: \"gpt-4o-mini\",\n  messages: [\n    {\n      role: \"system\",\n      content: \"You are an expert HR recruiter analyzing CVs for a data analyst position. Return JSON with: score (0-100), category, matchedSkills (array), yearsExperience, redFlags (array), strengths (array), recommendation\"\n    },\n    {\n      role: \"user\",\n      content: `Analyze this CV:\\n\\n${cvText}`\n    }\n  ],\n  temperature: 0.3\n};\n\nreturn {\n  requestBody: requestBody,\n  fileInfo: fileInfo,\n  config: fileInfo.config\n};"
+      },
+      "id": "prep-ai",
+      "name": "Prepare AI Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1350, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "call-ai",
+      "name": "Call OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1550, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response\nconst fileInfo = $('Prepare AI Request').item.json.fileInfo;\nconst config = $('Prepare AI Request').item.json.config;\n\nlet aiAnalysis;\ntry {\n  let content = $input.item.json.choices[0].message.content;\n  content = content.replace(/```json\\n/g, '').replace(/```\\n/g, '').replace(/```/g, '');\n  aiAnalysis = JSON.parse(content.trim());\n} catch (error) {\n  aiAnalysis = {\n    score: 0,\n    category: \"Error\",\n    matchedSkills: [],\n    redFlags: [error.message],\n    recommendation: \"Manual review needed\"\n  };\n}\n\n// Format for sheets\nreturn {\n  sheetData: {\n    'Date Applied': new Date().toISOString().split('T')[0],\n    'Candidate Name': fileInfo.name.replace(/\\.pdf$/i, ''),\n    'CV Link': fileInfo.webViewLink,\n    'Score': aiAnalysis.score,\n    'Category': aiAnalysis.category,\n    'Matched Keywords': (aiAnalysis.matchedSkills || []).join(', '),\n    'Red Flags': (aiAnalysis.redFlags || []).join(', ') || 'None',\n    'Status': 'AI Reviewed'\n  },\n  fileInfo: fileInfo,\n  config: config,\n  success: aiAnalysis.score >= 0\n};"
+      },
+      "id": "parse-ai",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1750, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "1xfU9rzjBpb3NEHYzvMuHZ2R2QW_IYe5i3dCW7Ls-bII",
+        "range": "A:H",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": "={{ $json.sheetData }}",
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "id": "log-sheet",
+      "name": "Log to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1950, 300]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "update",
+        "fileId": "={{ $json.fileInfo.id }}",
+        "updateFields": {
+          "addParents": ["{{ $json.config.processedFolderId }}"],
+          "removeParents": ["{{ $json.config.sourceFolderId }}"]
+        }
+      },
+      "id": "move-file",
+      "name": "Move to Processed",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2150, 300]
+    },
+    {
+      "parameters": {},
+      "id": "no-op",
+      "name": "Continue Loop",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2350, 300]
+    }
+  ],
+  "connections": {
+    "Start Batch Process": {
+      "main": [[{"node": "List All CVs", "type": "main", "index": 0}]]
+    },
+    "List All CVs": {
+      "main": [[{"node": "Add Folder Config", "type": "main", "index": 0}]]
+    },
+    "Add Folder Config": {
+      "main": [[{"node": "Process One by One", "type": "main", "index": 0}]]
+    },
+    "Process One by One": {
+      "main": [[{"node": "Download CV", "type": "main", "index": 0}]]
+    },
+    "Download CV": {
+      "main": [[{"node": "Extract PDF Text", "type": "main", "index": 0}]]
+    },
+    "Extract PDF Text": {
+      "main": [[{"node": "Prepare AI Request", "type": "main", "index": 0}]]
+    },
+    "Prepare AI Request": {
+      "main": [[{"node": "Call OpenAI", "type": "main", "index": 0}]]
+    },
+    "Call OpenAI": {
+      "main": [[{"node": "Parse AI Response", "type": "main", "index": 0}]]
+    },
+    "Parse AI Response": {
+      "main": [[{"node": "Log to Sheet", "type": "main", "index": 0}]]
+    },
+    "Log to Sheet": {
+      "main": [[{"node": "Move to Processed", "type": "main", "index": 0}]]
+    },
+    "Move to Processed": {
+      "main": [[{"node": "Continue Loop", "type": "main", "index": 0}]]
+    },
+    "Continue Loop": {
+      "main": [[{"node": "Process One by One", "type": "main", "index": 0}]]
+    }
+  }
+}

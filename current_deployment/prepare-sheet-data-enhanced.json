@@ -1,0 +1,10 @@
+{
+  "parameters": {
+    "jsCode": "// Get the parsed AI response\nconst aiData = $input.item.json;\n\n// Get the original file info from earlier in the workflow\nconst fileInfo = $('Filter PDFs Only').item.json;\n\n// Format the Google Drive link\nconst driveLink = `https://drive.google.com/file/d/${fileInfo.id}/view?usp=drivesdk`;\n\n// Get current date in YYYY-MM-DD format\nconst today = new Date().toISOString().split('T')[0];\n\n// Check if this was an error case\nconst isError = aiData.error || aiData.category === 'Error';\n\n// Prepare the data for Google Sheets\nconst sheetData = {\n  'Date Applied': today,\n  'Candidate Name': aiData.name || 'Unknown',\n  'CV Link': driveLink,\n  'Score': aiData.overall_score || 0,\n  'Category': aiData.category || 'Error',\n  'Matched Keywords': Array.isArray(aiData.matchedSkills) ? aiData.matchedSkills.join(', ') : '',\n  'Red Flags': aiData.redFlags && aiData.redFlags.length > 0 ? aiData.redFlags.join(', ') : 'None',\n  'Status': isError ? 'Error - Review Needed' : 'AI Reviewed',\n  'AI Recommendation': aiData.recommendation || 'Manual review required',\n  'Years Experience': aiData.yearsExperience || 'Unknown',\n  'Strengths': Array.isArray(aiData.strengths) ? aiData.strengths.join('; ') : '',\n  '_processingSuccess': !isError,\n  '_fileId': fileInfo.id,\n  '_fileName': fileInfo.name,\n  '_error': aiData.error || null\n};\n\n// IMPORTANT: Return with pairedItem to maintain data chain\nreturn {\n  json: sheetData,\n  pairedItem: 0\n};"
+  },
+  "id": "prepare-sheet-data-node",
+  "name": "Prepare Sheet Data",
+  "type": "n8n-nodes-base.code",
+  "typeVersion": 2,
+  "position": [-1500, 280]
+}

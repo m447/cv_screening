@@ -1,0 +1,117 @@
+{
+  "name": "CV Screening Personal",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute",
+              "minute": 5
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": "1dMuo2J3L52QqDmHj0UOEe9MSk0gsPSNa",
+        "event": "fileCreated"
+      },
+      "id": "drive-trigger",
+      "name": "Monitor CV Folder",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [250, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": "={{$json.id}}",
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "download-cv",
+      "name": "Download CV",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [450, 300],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simple scoring based on keywords\nconst keywords = ['python', 'javascript', 'experience', 'degree', 'skills'];\nconst cvText = $input.item.binary.data.data.toLowerCase();\nlet score = 0;\nlet foundKeywords = [];\n\nkeywords.forEach(keyword => {\n  if (cvText.includes(keyword)) {\n    score += 10;\n    foundKeywords.push(keyword);\n  }\n});\n\nreturn {\n  fileName: $input.item.json.name,\n  fileLink: $input.item.json.webViewLink,\n  score: score,\n  keywords: foundKeywords.join(', '),\n  date: new Date().toISOString().split('T')[0]\n};"
+      },
+      "id": "score-cv",
+      "name": "Score CV",
+      "type": "n8n-nodes-base.code",
+      "position": [650, 300],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "1xfU9rzjBpb3NEHYzvMuHZ2R2QW_IYe5i3dCW7Ls-bII",
+        "range": "A:E",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{$json.date}}",
+            "File Name": "={{$json.fileName}}",
+            "CV Link": "={{$json.fileLink}}",
+            "Score": "={{$json.score}}",
+            "Keywords": "={{$json.keywords}}"
+          }
+        }
+      },
+      "id": "log-sheets",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [850, 300],
+      "typeVersion": 4
+    }
+  ],
+  "connections": {
+    "Monitor CV Folder": {
+      "main": [
+        [
+          {
+            "node": "Download CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download CV": {
+      "main": [
+        [
+          {
+            "node": "Score CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score CV": {
+      "main": [
+        [
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": []
+}

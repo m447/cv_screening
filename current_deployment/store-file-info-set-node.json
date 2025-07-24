@@ -1,0 +1,30 @@
+{
+  "parameters": {
+    "mode": "manual",
+    "duplicateItem": false,
+    "fields": {
+      "values": [
+        {
+          "name": "fileId",
+          "value": "={{ $json.id }}"
+        },
+        {
+          "name": "fileName", 
+          "value": "={{ $json.name }}"
+        },
+        {
+          "name": "fileMimeType",
+          "value": "={{ $json.mimeType }}"
+        }
+      ]
+    },
+    "options": {
+      "keepOnlySet": false
+    }
+  },
+  "id": "store-file-info",
+  "name": "Store File Info",
+  "type": "n8n-nodes-base.set",
+  "typeVersion": 3.4,
+  "position": [-700, 208]
+}

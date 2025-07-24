@@ -1,0 +1,21 @@
+{
+  "parameters": {
+    "operation": "move",
+    "fileId": "={{ $json._fileId }}",
+    "driveId": {
+      "__rl": true,
+      "value": "My Drive",
+      "mode": "list"
+    },
+    "folderId": {
+      "__rl": true,
+      "value": "1mu9rgElrKMU1vt22EC7KaKWquw1EkJDP",
+      "mode": "id"
+    }
+  },
+  "id": "move-to-failed",
+  "name": "Move to Failed",
+  "type": "n8n-nodes-base.googleDrive",
+  "typeVersion": 3,
+  "position": [1200, 192]
+}

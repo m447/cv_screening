@@ -1,0 +1,81 @@
+{
+  "name": "OpenAI Integration Nodes",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Get CV text from previous node\nconst cvText = $input.item.json.text;\n\n// Create the complete request body for OpenAI\nconst requestBody = {\n  model: \"gpt-4o-mini\",\n  messages: [\n    {\n      role: \"system\",\n      content: \"You are an expert HR recruiter analyzing CVs for a data analyst position. Analyze the CV and return ONLY a valid JSON response with these fields: score (0-100), category (Highly Qualified/Qualified/Possibly Qualified/Unqualified), matchedSkills (array of strings), yearsExperience (number), redFlags (array of strings), strengths (array of strings), recommendation (brief string)\"\n    },\n    {\n      role: \"user\",\n      content: `Analyze this CV for a Data Analyst position requiring Python, SQL, and data visualization skills:\\n\\n${cvText}`\n    }\n  ],\n  temperature: 0.3,\n  max_tokens: 500\n};\n\nreturn {\n  requestBody: requestBody\n};"
+      },
+      "id": "prepare-openai-request",
+      "name": "Prepare OpenAI Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "call-openai",
+      "name": "Call OpenAI API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get data from previous nodes\nconst triggerData = $('Monitor CV Folder').item.json;\nconst fileName = triggerData.name || 'Unknown';\nconst fileLink = triggerData.webViewLink || '';\n\n// Parse OpenAI response\nlet aiAnalysis;\ntry {\n  const openAIResponse = $input.item.json.choices[0].message.content;\n  aiAnalysis = JSON.parse(openAIResponse);\n} catch (error) {\n  // Fallback if AI fails\n  aiAnalysis = {\n    score: 0,\n    category: \"Error - Manual Review Needed\",\n    matchedSkills: [\"AI Analysis Failed\"],\n    redFlags: [error.message],\n    strengths: [],\n    recommendation: \"Please review manually\"\n  };\n}\n\n// Extract candidate name from filename\nconst candidateName = fileName\n  .replace(/\\.pdf$/i, '')\n  .replace(/^CV_/i, '')\n  .replace(/_/g, ' ');\n\n// Format for Google Sheets\nreturn {\n  'Date Applied': new Date().toISOString().split('T')[0],\n  'Candidate Name': candidateName,\n  'CV Link': fileLink,\n  'Score': aiAnalysis.score || 0,\n  'Category': aiAnalysis.category || 'Unknown',\n  'Matched Keywords': (aiAnalysis.matchedSkills || []).slice(0, 5).join(', '),\n  'Red Flags': (aiAnalysis.redFlags || []).join(', ') || 'None',\n  'Status': 'AI Reviewed',\n  'AI Recommendation': aiAnalysis.recommendation || 'No recommendation',\n  'Strengths': (aiAnalysis.strengths || []).slice(0, 3).join(', ')\n};"
+      },
+      "id": "parse-ai-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Prepare OpenAI Request": {
+      "main": [
+        [
+          {
+            "node": "Call OpenAI API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call OpenAI API": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

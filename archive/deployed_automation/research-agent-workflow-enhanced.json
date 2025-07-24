@@ -1,0 +1,289 @@
+{
+  "name": "CV Research Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "workflow-trigger",
+      "name": "When Called by Main Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.3,
+          "systemMessage": "You are an advanced candidate research agent. When given a high-scoring candidate's information, you will:\n\n1. Generate targeted search queries for finding their online presence\n2. Analyze the provided information to identify key research areas\n3. Create a research plan\n4. Compile findings into a structured report\n\nYour research should focus on:\n- Professional profiles (LinkedIn, GitHub, personal websites)\n- Technical contributions (open source, publications, talks)\n- Work history verification\n- Skills validation\n- Cultural fit indicators\n\nAlways respect privacy and use only publicly available information. Return a structured JSON report with your findings."
+        }
+      },
+      "id": "research-agent",
+      "name": "Research Planning Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.5,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "id": "chat-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "name": "Generate Search Queries",
+        "description": "Generate search queries for finding candidate information online",
+        "functionName": "generateSearchQueries",
+        "language": "typescript",
+        "code": "export function generateSearchQueries(input: { name: string, skills: string, position: string }): string[] {\n  const queries = [];\n  \n  // LinkedIn search\n  queries.push(`${input.name} ${input.position} LinkedIn`);\n  queries.push(`site:linkedin.com/in ${input.name}`);\n  \n  // GitHub search\n  if (input.skills.toLowerCase().includes('developer') || input.skills.includes('python') || input.skills.includes('javascript')) {\n    queries.push(`${input.name} GitHub`);\n    queries.push(`site:github.com ${input.name}`);\n  }\n  \n  // General professional search\n  queries.push(`${input.name} ${input.skills.split(',')[0]}`);\n  queries.push(`\"${input.name}\" ${input.position} portfolio`);\n  \n  return queries;\n}"
+      },
+      "id": "search-query-tool",
+      "name": "Search Query Generator",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "name": "Web Search",
+        "description": "Search the web for candidate information",
+        "workflowId": "web-search-workflow"
+      },
+      "id": "web-search-tool",
+      "name": "Web Search Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "name": "Research Summary",
+        "description": "Compile research findings into a structured report",
+        "functionName": "compileResearch",
+        "language": "typescript",
+        "code": "export function compileResearch(findings: any[]): object {\n  return {\n    timestamp: new Date().toISOString(),\n    profilesFound: findings.filter(f => f.type === 'profile').length,\n    keyFindings: findings.filter(f => f.important),\n    recommendations: findings.filter(f => f.recommendation),\n    verificationStatus: findings.some(f => f.verified) ? 'verified' : 'unverified',\n    researchComplete: true\n  };\n}"
+      },
+      "id": "compile-tool",
+      "name": "Research Compiler",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [650, 500]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.candidateName }}-{{ $json.timestamp }}"
+      },
+      "id": "memory",
+      "name": "Research Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1,
+      "position": [650, 600]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1H0K91oMK2T5F6vEi9H4I9VxMx2_fqQ6ShGHxBnGxQQo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Research",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Candidate Name": "={{ $json.candidateName }}",
+            "Research Date": "={{ $json.researchDate }}",
+            "Score": "={{ $json.candidateScore }}",
+            "Position": "={{ $json.position }}",
+            "LinkedIn Found": "={{ $json.linkedInProfile || 'Not Found' }}",
+            "GitHub Found": "={{ $json.githubProfile || 'Not Found' }}",
+            "Key Findings": "={{ $json.keyFindings }}",
+            "Verification Status": "={{ $json.verificationStatus }}",
+            "Research Summary": "={{ $json.summary }}",
+            "Recommendation": "={{ $json.recommendation }}"
+          }
+        }
+      },
+      "id": "log-research",
+      "name": "Log Research Results",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.candidateScore }}",
+              "operation": "larger",
+              "value2": 90
+            }
+          ]
+        }
+      },
+      "id": "check-top-candidate",
+      "name": "Score > 90?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "svama85@gmail.com",
+        "subject": "🌟 Top Candidate Alert: {{ $json.candidateName }} (Score: {{ $json.candidateScore }})",
+        "message": "<h2>Exceptional Candidate Found!</h2>\n<p>Research completed for a top-scoring candidate:</p>\n\n<h3>Candidate Details</h3>\n<ul>\n<li><strong>Name:</strong> {{ $json.candidateName }}</li>\n<li><strong>Score:</strong> {{ $json.candidateScore }}/100</li>\n<li><strong>Best Position:</strong> {{ $json.position }}</li>\n</ul>\n\n<h3>Online Presence</h3>\n<ul>\n<li><strong>LinkedIn:</strong> {{ $json.linkedInProfile || 'Not Found' }}</li>\n<li><strong>GitHub:</strong> {{ $json.githubProfile || 'Not Found' }}</li>\n<li><strong>Other:</strong> {{ $json.otherProfiles || 'None' }}</li>\n</ul>\n\n<h3>Key Findings</h3>\n<p>{{ $json.keyFindings }}</p>\n\n<h3>Recommendation</h3>\n<p><strong>{{ $json.recommendation }}</strong></p>\n\n<p><a href=\"{{ $json.cvLink }}\">View Original CV</a></p>",
+        "options": {}
+      },
+      "id": "email-top-candidate",
+      "name": "Email - Top Candidate Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ {\n  success: true,\n  candidateName: $json.candidateName,\n  researchComplete: true,\n  profilesFound: $json.profilesFound || 0,\n  topCandidate: $json.candidateScore > 90,\n  timestamp: new Date().toISOString()\n} }}",
+        "options": {}
+      },
+      "id": "return-status",
+      "name": "Return Status",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "workflow-trigger": {
+      "main": [
+        [
+          {
+            "node": "research-agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "research-agent": {
+      "main": [
+        [
+          {
+            "node": "log-research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat-model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "research-agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search-query-tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "research-agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "web-search-tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "research-agent",
+            "type": "ai_tool",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "compile-tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "research-agent",
+            "type": "ai_tool",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "research-agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log-research": {
+      "main": [
+        [
+          {
+            "node": "check-top-candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-top-candidate": {
+      "main": [
+        [
+          {
+            "node": "email-top-candidate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "return-status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email-top-candidate": {
+      "main": [
+        [
+          {
+            "node": "return-status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
